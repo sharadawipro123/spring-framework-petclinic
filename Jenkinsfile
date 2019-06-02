@@ -1,32 +1,22 @@
-node {
-    stage 'checkout'
-    git 'https://gitlab.com/RavisankarCts/hello-world.git' 
-    
-    stage 'build'
-    sh 'mvn clean install'
-    
-    stage('Results - 1') {
-         junit '**/target/surefire-reports/TEST-*.xml'
-         archive 'target/*.jar'
+node  { stage ('scm checkout')
+
+    git credentialsId: 'sharadawipro123', url: 'https://github.com/sharadawipro123/spring-framework-petclinic.git'
+       stage('java build'){
+           sh 'mvn clean install'
+       }
+
+        stage ('sh Build'){
+        sh '/usr/bin/docker build -t sharadagaikwad/target:v2 .'
+            
         }
-    
-    stage 'bake image'
-    docker.withRegistry('https://registry.hub.docker.com','docker-hub-credentials') {
-        def image = docker.build("ravisankar/ravisankardevops:${env.BUILD_TAG}",'.')
-        
-        stage 'test image'
-        image.withRun('-p 8888:8888') {springboot ->
-        sh 'while ! httping -qc1 http://localhost:8888/info; do sleep 1; done'
-        git 'https://github.com/RavisankarCts/petclinicacceptance.git'
-        sh 'mvn clean verify'
-        }
-        
-        stage('Results') {
-         junit '**/target/surefire-reports/TEST-*.xml'
-         archive 'target/*.jar'
-        }
-        
-        stage 'push image'
-        image.push()
-    }
+stage('push docker image'){
+withCredentials([usernamePassword(credentialsId: 'sharadagaikwad', passwordVariable: 'Pushdocker', usernameVariable: 'sharadagaikwad')])
+{
+sh '/usr/bin/docker login -u $sharadagaikwad -p $Pushdocker'
 }
+
+    sh '/usr/bin/docker push sharadagaikwad/target:v2'
+
+}   
+}
+
